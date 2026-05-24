@@ -2,6 +2,11 @@
 
 A responsive, minimalist lock screen for web projects that uses a playable piano as the passcode interface. Built entirely with pure HTML, CSS, and Vanilla JavaScript—no external dependencies, images, or audio files required.
 
+
+Demo: https://hemant-apk.github.io/Piano-Lock/
+
+
+
 ## The Concept
 
 The **Minimal Piano Lock** reimagines authentication by turning a security gate into a tactile, musical experience. Instead of entering alphanumeric characters, the user provides a "melodic key"—a sequence of notes that must be played in the correct order to trigger the unlock state.
