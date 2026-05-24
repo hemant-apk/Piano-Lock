@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Piano Lock</title>
+    <style>
+        /* --- Ultra Minimalist Responsive CSS --- */
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #ffffff;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-transform: uppercase;
+            overflow: hidden; 
+        }
+
+        /* Container for UI headers (Setup / Locked) */
+        #header-container {
+            text-align: center;
+            width: 100%;
+            padding: 0 15px;
+            box-sizing: border-box;
+            height: 160px; /* Fixed height so piano doesn't jump */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-weight: bold;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+            font-size: 1.5rem;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        /* Input Controls for Setup */
+        .controls {
+            margin-bottom: 15px;
+        }
+        
+        input[type="number"] {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            width: 60px;
+            padding: 5px;
+            border: 2px solid #000;
+            outline: none;
+            margin: 0 10px;
+        }
+
+        /* Displays */
+        .display-box {
+            font-size: 1.5em;
+            letter-spacing: 10px;
+            color: #000;
+            height: 35px;
+            min-width: 200px;
+            border-bottom: 2px solid #000;
+            margin: 0 auto 10px auto;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Buttons */
+        button {
+            padding: 10px 20px;
+            background: #000;
+            color: #fff;
+            border: 2px solid #000;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:disabled {
+            background: #ccc;
+            border-color: #ccc;
+            cursor: not-allowed;
+            color: #666;
+        }
+
+        button:not(:disabled):hover {
+            background: #fff;
+            color: #000;
+        }
+
+        /* 1-Octave Piano Wrapper */
+        #piano-wrapper {
+            width: 100%;
+            max-width: 600px;
+            border: 2px solid #000;
+            background: #fff;
+            margin-bottom: 40px;
+        }
+
+        #piano-container {
+            position: relative;
+            height: 40vh; 
+            min-height: 200px;
+            max-height: 350px;
+            user-select: none; 
+            display: flex;
+            width: 100%;
+            touch-action: none; 
+        }
+
+        .key {
+            cursor: pointer;
+            box-sizing: border-box;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .white {
+            flex: 1; 
+            height: 100%;
+            background: #fff;
+            border-right: 2px solid #000;
+            color: #000;
+            padding-bottom: 15px;
+            transition: background 0.05s, color 0.05s;
+        }
+        .white:last-child {
+            border-right: none;
+        }
+
+        .white:active, .white.active {
+            background: #000;
+            color: #fff;
+        }
+
+        .black {
+            position: absolute;
+            height: 60%;
+            background: #000;
+            top: 0;
+            z-index: 2;
+            color: #fff;
+            padding-bottom: 15px;
+            border: 2px solid #000;
+            border-top: none;
+            transition: background 0.05s, color 0.05s;
+        }
+
+        .black:active, .black.active {
+            background: #fff;
+            color: #000;
+            z-index: 3;
+        }
+
+        .note-label {
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: none;
+            letter-spacing: 1px;
+        }
+        
+        .black .note-label {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 12px;
+            color: #fff;
+        }
+        
+        .black:active .note-label, .black.active .note-label {
+            color: #000;
+        }
+
+        /* Unlocked UI */
+        #unlocked-content {
+            display: none;
+            text-align: center;
+            background: #fff;
+            padding: 50px;
+            border: 2px solid #000;
+            width: 80%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- DYNAMIC HEADER AREA -->
+    <div id="header-container">
+        
+        <!-- STATE 0: SETUP UI -->
+        <div id="setup-ui">
+            <h1>SETUP LOCK</h1>
+            <div class="controls">
+                <label>CODE LENGTH:</label>
+                <input type="number" id="code-length" min="1" max="10" value="3">
+            </div>
+            <p id="setup-instruction">PLAY 3 NOTES TO SET CODE</p>
+            <div class="display-box" id="setup-display">- - -</div>
+            <button id="lock-btn" disabled onclick="lockSite()">LOCK SITE</button>
+            <button id="clear-btn" style="background: transparent; color: #000; margin-left: 10px;" onclick="clearSetup()">CLEAR</button>
+        </div>
+
+        <!-- STATE 1: LOCKED UI -->
+        <div id="locked-ui" style="display: none;">
+            <h1>PIANO LOCK</h1>
+            <p>ENTER YOUR PASSCODE</p>
+            <div class="display-box" id="input-display"></div>
+        </div>
+
+    </div>
+
+    <!-- THE PIANO (Used in Setup and Locked states) -->
+    <div id="piano-wrapper">
+        <div id="piano-container"></div>
+    </div>
+
+    <!-- STATE 2: UNLOCKED CONTENT -->
+    <div id="unlocked-content">
+        <h1>UNLOCKED</h1>
+        <p>ACCESS GRANTED.</p>
+        <button onclick="resetToSetup()">RESET LOCK</button>
+    </div>
+
+    <script>
+        // --- Application State ---
+        let appState = 'SETUP'; // Can be: 'SETUP', 'LOCKED', 'UNLOCKED'
+        let passcodeLength = 3;
+        let secretPasscode = [];
+        let currentInput = [];
+
+        // --- UI Elements ---
+        const lengthInput = document.getElementById('code-length');
+        const setupInstruction = document.getElementById('setup-instruction');
+        const setupDisplay = document.getElementById('setup-display');
+        const inputDisplay = document.getElementById('input-display');
+        const lockBtn = document.getElementById('lock-btn');
+        
+        const setupUI = document.getElementById('setup-ui');
+        const lockedUI = document.getElementById('locked-ui');
+        const unlockedContent = document.getElementById('unlocked-content');
+        const pianoWrapper = document.getElementById('piano-wrapper');
+
+        // --- Setup Logic ---
+        lengthInput.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value);
+            if (val < 1) val = 1;
+            if (val > 10) val = 10; // Max 10 digits
+            
+            lengthInput.value = val;
+            passcodeLength = val;
+            clearSetup();
+        });
+
+        function clearSetup() {
+            secretPasscode = [];
+            updateSetupUI();
+        }
+
+        function updateSetupUI() {
+            setupInstruction.innerText = `PLAY ${passcodeLength} NOTES TO SET CODE`;
+            
+            // Show placeholders like "_ _ _" or the entered notes
+            let displayArr = [];
+            for(let i=0; i < passcodeLength; i++) {
+                displayArr.push(secretPasscode[i] ? secretPasscode[i] : '-');
+            }
+            setupDisplay.innerText = displayArr.join(' ');
+
+            // Enable Lock button only if passcode length is met
+            if (secretPasscode.length === passcodeLength) {
+                lockBtn.disabled = false;
+                setupInstruction.innerText = "CODE READY. CLICK LOCK.";
+            } else {
+                lockBtn.disabled = true;
+            }
+        }
+
+        // --- State Transitions ---
+        function lockSite() {
+            appState = 'LOCKED';
+            currentInput = [];
+            inputDisplay.innerText = ''; // Clear display
+            
+            // Swap UI
+            setupUI.style.display = 'none';
+            lockedUI.style.display = 'block';
+        }
+
+        function unlockSite() {
+            appState = 'UNLOCKED';
+            
+            // Hide header and piano, show unlocked content
+            document.getElementById('header-container').style.display = 'none';
+            pianoWrapper.style.display = 'none';
+            unlockedContent.style.display = 'block';
+        }
+
+        function resetToSetup() {
+            appState = 'SETUP';
+            clearSetup();
+            
+            // Restore UI
+            document.getElementById('header-container').style.display = 'flex';
+            setupUI.style.display = 'block';
+            lockedUI.style.display = 'none';
+            unlockedContent.style.display = 'none';
+            pianoWrapper.style.display = 'block';
+        }
+
+        // --- Audio & Piano Rendering ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        const pianoContainer = document.getElementById('piano-container');
+        const START_MIDI = 60; // C4
+        const END_MIDI = 72;   // C5
+        const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        
+        let totalWhiteKeys = 0;
+        for (let midi = START_MIDI; midi <= END_MIDI; midi++) {
+            if (!NOTE_NAMES[(midi - START_MIDI) % 12].includes('#')) totalWhiteKeys++;
+        }
+
+        let whiteKeyIndex = 0;
+
+        for (let midi = START_MIDI; midi <= END_MIDI; midi++) {
+            let noteIndex = (midi - START_MIDI) % 12; 
+            let noteName = NOTE_NAMES[noteIndex];
+            let octave = Math.floor(midi / 12) - 1; 
+            let fullName = noteName + octave;
+            let isBlack = noteName.includes('#');
+            let freq = 440 * Math.pow(2, (midi - 69) / 12); 
+
+            const key = document.createElement('div');
+            key.setAttribute('data-note', fullName);
+            
+            const label = document.createElement('span');
+            label.className = 'note-label';
+            label.innerText = fullName;
+            key.appendChild(label);
+
+            if (!isBlack) {
+                key.className = 'key white';
+                pianoContainer.appendChild(key);
+                whiteKeyIndex++; 
+            } else {
+                key.className = 'key black';
+                let whiteKeyWidthPct = 100 / totalWhiteKeys;
+                let blackKeyWidthPct = whiteKeyWidthPct * 0.65; 
+                
+                key.style.width = `${blackKeyWidthPct}%`;
+                key.style.left = `${(whiteKeyIndex * whiteKeyWidthPct) - (blackKeyWidthPct / 2)}%`;
+                pianoContainer.appendChild(key);
+            }
+
+            key.addEventListener('pointerdown', (e) => {
+                e.preventDefault(); 
+                initAudio(); 
+                
+                key.classList.add('active');
+                setTimeout(() => key.classList.remove('active'), 100);
+                
+                playNote(fullName, freq);
+            });
+        }
+
+        function playNote(noteName, frequency) {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.start();
+
+            gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1);
+            osc.stop(audioCtx.currentTime + 1);
+
+            handleInput(noteName);
+        }
+
+        // --- Note Routing Logic ---
+        function handleInput(note) {
+            if (appState === 'SETUP') {
+                if (secretPasscode.length < passcodeLength) {
+                    secretPasscode.push(note);
+                    updateSetupUI();
+                }
+            } 
+            else if (appState === 'LOCKED') {
+                currentInput.push(note);
+
+                // Keep length of input matching the required passcode length
+                if (currentInput.length > passcodeLength) {
+                    currentInput.shift(); 
+                }
+
+                inputDisplay.innerText = currentInput.join(' ');
+
+                // Check for unlock success
+                if (currentInput.join(',') === secretPasscode.join(',')) {
+                    setTimeout(() => {
+                        unlockSite();
+                    }, 200);
+                }
+            }
+        }
+
+        // Initialize setup screen
+        updateSetupUI();
+    </script>
+</body>
+</html>
